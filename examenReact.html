@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examen Fullstack JS - 100 Preguntes</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        .progress-container {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-number {
+            color: var(--primary);
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        h2 {
+            margin: 0 0 25px 0;
+            font-size: 1.4rem;
+            line-height: 1.4;
+        }
+
+        .options {
+            display: grid;
+            gap: 12px;
+            flex-grow: 1;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #f3f4f6;
+            padding: 16px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #f9fafb;
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary);
+            background: #eef2ff;
+            font-weight: 600;
+        }
+
+        .footer-btns {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button.nav-btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-next { background: var(--primary); color: white; }
+        .btn-next:disabled { background: #9ca3af; cursor: not-allowed; }
+        .btn-prev { background: #e5e7eb; color: #4b5563; }
+
+        #result-screen { display: none; text-align: center; }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 10px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 20px auto;
+        }
+
+        .error-log {
+            text-align: left;
+            margin-top: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .error-card {
+            background: #fff1f2;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--error);
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz-screen">
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem;">
+                <span id="progress-text">Pregunta 1 de 100</span>
+                <span id="percent-text">0%</span>
+            </div>
+            <div class="progress-bar"><div id="progress-fill"></div></div>
+        </div>
+
+        <div class="card">
+            <span class="question-number" id="q-num">Pregunta 1</span>
+            <h2 id="q-text">Carregant...</h2>
+            <div class="options" id="options-container"></div>
+            
+            <div class="footer-btns">
+                <button class="nav-btn btn-prev" id="prev-btn" onclick="prevQuestion()" style="visibility: hidden;">Anterior</button>
+                <button class="nav-btn btn-next" id="next-btn" onclick="nextQuestion()" disabled>Següent</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen" class="card">
+        <h1>Test Finalitzat</h1>
+        <div class="score-circle" id="score-val">0/100</div>
+        <p id="result-msg"></p>
+        <div class="error-log" id="error-log"></div>
+        <button class="nav-btn btn-next" style="margin-top:20px; width:100%" onclick="location.reload()">Reiniciar Test</button>
+    </div>
+</div>
+
+<script>
+    // Base de dades de les 100 preguntes
+    const questions = [
+        { q: "Què és el Fullstack JavaScript?", a: ["Un framework específic per aplicacions mòbils", "Desenvolupar frontend i backend amb JavaScript com a llenguatge principal", "Desenvolupar només el frontend amb JavaScript"], c: 1 },
+        { q: "Quin avantatge NO és típic del Fullstack JS?", a: ["Un sol llenguatge (JavaScript/TypeScript) de cap a cap", "Reutilització de codi (validacions, tipus, lògica)", "No cal conèixer HTML ni CSS"], c: 2 },
+        { q: "Quin element HTML5 semàntic s'utilitza per al contingut principal de la pàgina?", a: ["<body>", "<content>", "<main>"], c: 2 },
+        { q: "Per a l'accessibilitat, què proporcionen els atributs aria-*?", a: ["Estils visuals addicionals", "Informació per tecnologies d'assistència (lectors de pantalla)", "Validació de formularis"], c: 1 },
+        { q: "Quin atribut HTML5 en un input fa que el camp sigui obligatori?", a: ["mandatory", "required", "must"], c: 1 },
+        { q: "En CSS, què determina quins estils s'apliquen quan hi ha conflicte?", a: ["La mida del fitxer CSS", "L'ordre alfabètic de les propietats", "L'especificitat i la cascada"], c: 2 },
+        { q: "Quina propietat CSS s'utilitza per layouts flexibles en una dimensió?", a: ["Grid", "Float", "Flexbox"], c: 2 },
+        { q: "Què fan les media queries en CSS?", a: ["Importar altres fulls d'estil", "Aplicar estils segons condicions (p.ex. amplada de pantalla)", "Optimitzar imatges"], c: 1 },
+        { q: "Com es defineix una variable CSS?", a: ["$variable: valor;", "var(variable): valor;", "--variable: valor;"], c: 2 },
+        { q: "Quin mètode del navegador s'utilitza per fer peticions HTTP des de JavaScript?", a: ["fetch()", "request()", "ajax()"], c: 0 },
+        { q: "Què permet async/await en JavaScript?", a: ["Escriure codi asíncron de forma més llegible", "Declarar variables globals", "Executar codi en paral·lel sense restriccions"], c: 0 },
+        { q: "Quina sintaxi s'utilitza per exportar un mòdul en JavaScript (ES Modules)?", a: ["module.exports = ...", "export ...", "exports.xxx = ..."], c: 1 },
+        { q: "Què és el DOM?", a: ["Un llenguatge de marques", "La representació en memòria dels elements HTML que JavaScript pot manipular", "Un gestor de paquets"], c: 1 },
+        { q: "Quina diferència principal hi ha entre localStorage i sessionStorage?", a: ["sessionStorage és més ràpid", "localStorage només guarda strings", "sessionStorage es perd en tancar la pestanya; localStorage persisteix"], c: 2 },
+        { q: "Què és Node.js?", a: ["Un framework frontend", "Un entorn d'execució de JavaScript fora del navegador", "Una base de dades"], c: 1 },
+        { q: "Com s'importa codi amb CommonJS (Node clàssic)?", a: ["require('mòdul')", "include 'mòdul'", "import x from 'mòdul'"], c: 0 },
+        { q: "Per usar ES Modules (import/export) en un projecte Node.js, què cal afegir al package.json?", a: ["\"modules\": \"esm\"", "\"type\": \"module\"", "\"es6\": true"], c: 1 },
+        { q: "Què és npm?", a: ["Un framework de testing", "El gestor de paquets de Node.js (instal·lació i dependències)", "Un servidor web"], c: 1 },
+        { q: "On es guarden els secrets i la configuració per entorn en un projecte Node?", a: ["Al package.json", "Dins del codi font", "A variables d'entorn (p.ex. .env) i process.env"], c: 2 },
+        { q: "En l'estructura típica d'un projecte Node/Express, on va la lògica de negoci?", a: ["A la carpeta routes/", "A la carpeta controllers/", "A la carpeta public/"], c: 1 },
+        { q: "Què retorna un component React?", a: ["HTML pur", "JSX (JavaScript XML)", "Un objecte JSON"], c: 1 },
+        { q: "Què són les props en React?", a: ["Dades que es passen del component pare al fill", "Funcions del cicle de vida", "Variables globals"], c: 0 },
+        { q: "Quin hook de React s'utilitza per gestionar estat local?", a: ["useEffect", "useState", "useContext"], c: 1 },
+        { q: "Quin hook de React s'utilitza per efectes secundaris (p.ex. cridades API)?", a: ["useState", "useEffect", "useRef"], c: 1 },
+        { q: "Què fa React Router?", a: ["Permet navegació entre pàgines/vistes dins de l'app", "Gestiona l'estat global", "Conecta amb la base de dades"], c: 0 },
+        { q: "Quin d'aquests és un bundler modern molt ràpid amb HMR instantani?", a: ["Gulp", "Vite", "Bower"], c: 1 },
+        { q: "Què és Next.js?", a: ["Un framework Fullstack basat en React (SSR, API Routes, etc.)", "Un gestor de base de dades", "Una llibreria CSS"], c: 0 },
+        { q: "En Next.js 13+ amb App Router, on es defineixen les rutes?", a: ["Al fitxer routes.js", "Al package.json", "A la carpeta app/ amb fitxers page.tsx"], c: 2 },
+        { q: "Quina directiva indica que un component de Next.js s'executa al client (navegador)?", a: ["'use client'", "'use browser'", "'client component'"], c: 0 },
+        { q: "On s'executen els Server Components de Next.js?", a: ["Només al navegador", "Al servidor; no s'envia el seu codi JS al client", "Tant al servidor com al client"], c: 1 },
+        { q: "Què és l'SSR (Server-Side Rendering)?", a: ["Renderitzar la pàgina al client amb JavaScript", "Generar l'HTML al servidor per cada petició", "Servir fitxers estàtics"], c: 1 },
+        { q: "En Next.js App Router, com es defineix una ruta API GET?", a: ["Creant un fitxer get.js", "Exportant una funció anomenada GET", "Configurant next.config.js"], c: 1 },
+        { q: "Què retorna Response.json(dades) en una API Route de Next.js?", a: ["Un objecte JavaScript", "Una resposta HTTP amb cos JSON i Content-Type correcte", "Un stream de dades"], c: 1 },
+        { q: "Què indica 'use server' en un fitxer de Next.js?", a: ["Que el fitxer només s'executa al client", "Que les funcions exportades són Server Actions (s'executen al servidor)", "Que s'usa un servidor extern"], c: 1 },
+        { q: "Què fa revalidatePath() en una Server Action?", a: ["Elimina la ruta", "Invalida la cache de la ruta per mostrar dades noves", "Redirigeix l'usuari"], c: 1 },
+        { q: "Què vol dir 'serverless'?", a: ["Que no hi ha servidors", "Que no gestiones els servidors; el codi s'executa en funcions per petició", "Que el servidor és gratuït"], c: 1 },
+        { q: "Què és un 'cold start' en serverless?", a: ["Un error de connexió", "La primera execució més lenta perquè s'ha d'iniciar el runtime", "El tancament d'una funció"], c: 1 },
+        { q: "Què és FaaS?", a: ["Files as a Service", "Functions as a Service", "Frontend as a Service"], c: 1 },
+        { q: "Quin servei és ideal per desplegar Next.js i les seves API Routes?", a: ["Només AWS Lambda", "Vercel (creat pels autors de Next.js)", "Només un VPS propi"], c: 1 },
+        { q: "Quin middleware d'Express interpreta el cos de la petició com a JSON?", a: ["express.text()", "express.json()", "express.body()"], c: 1 },
+        { q: "Quin codi d'estat HTTP s'utilitza quan s'ha creat un recurs correctament?", a: ["200", "201", "204"], c: 1 },
+        { q: "Què és un middleware en Express?", a: ["Una funció que processa la petició (auth, log, parse) abans d'arribar a la ruta", "Un client frontend", "Un tipus de base de dades"], c: 0 },
+        { q: "Quin codi d'estat indica 'no autoritzat' (falta login)?", a: ["403", "401", "404"], c: 1 },
+        { q: "Per què cal configurar CORS en un API backend?", a: ["Per xifrar les dades", "Per permetre (o restringir) peticions des d'altres orígens (p.ex. el frontend)", "Per connectar amb la base de dades"], c: 1 },
+        { q: "Quines eines es poden usar per validar dades en el backend?", a: ["Només express-validator", "Només JWT", "Joi, Zod o express-validator"], c: 2 },
+        { q: "Què és JWT?", a: ["Un llenguatge de programació", "JSON Web Token: un token que el client envia per autenticar-se", "Un tipus de base de dades"], c: 1 },
+        { q: "Quin header HTTP s'utilitza per enviar el token JWT?", a: ["Authorization: Bearer <token>", "X-Token: <token>", "Auth: <token>"], c: 0 },
+        { q: "Per emmagatzemar contrasenyes de forma segura, què s'utilitza?", a: ["Hash (p.ex. bcrypt); mai es desa la contrasenya en clar", "Encriptació reversible", "Base64"], c: 0 },
+        { q: "Què és un ORM?", a: ["Un protocol de xarxa", "Un format de dades", "Object-Relational Mapping: capa que mapeja objectes a taules SQL"], c: 2 },
+        { q: "Quin ORM és molt usat amb Node.js i bases de dades SQL?", a: ["Mongoose", "Prisma", "Sequelize (o Prisma)"], c: 2 },
+        { q: "Què és Mongoose?", a: ["Un ORM per PostgreSQL", "Un bundler", "Un ODM per MongoDB amb Node.js"], c: 2 },
+        { q: "Quan és recomanable usar una base de dades SQL?", a: ["Només per llocs estàtics", "Per dades relacionals complexes, transaccions i consistència", "Sempre en frontend"], c: 1 },
+        { q: "Què són les migracions en bases de dades?", a: ["Scripts que canvien l'esquema de la BD (taules, columnes) de forma versionada", "Canvis de servidor", "Còpies de seguretat"], c: 0 },
+        { q: "En una API REST, quin verb HTTP s'utilitza per crear un recurs?", a: ["GET", "PUT", "POST"], c: 2 },
+        { q: "En una API REST, quin verb s'utilitza per eliminar un recurs?", a: ["REMOVE", "DELETE", "DROP"], c: 1 },
+        { q: "Quin avantatge té GraphQL respecte a REST?", a: ["Sempre més ràpid", "El client pot demanar exactament les dades que necessita (menys over/under-fetching)", "No cal definir esquema"], c: 1 },
+        { q: "Què és un refresh token?", a: ["Un token per actualitzar la pàgina", "Un token per actualitzar la base de dades", "Un token que permet renovar el JWT sense tornar a fer login"], c: 2 },
+        { q: "Què fa ESLint?", a: ["Executa els tests", "Formata el codi automàticament", "Detecta errors i inconsistències d'estil al codi"], c: 2 },
+        { q: "Què fa Prettier?", a: ["Detecta errors de sintaxi", "Formata el codi automàticament (estil consistent)", "Gestiona dependències"], c: 1 },
+        { q: "Quin tipus de tests s'executen al navegador simulant l'usuari (E2E)?", a: ["Jest", "Vitest", "Playwright o Cypress"], c: 2 },
+        { q: "On s'han de guardar els secrets (DB URL, API keys) en desenvolupament?", a: ["Al codi font i al repositori", "En fitxers .env (i mai pujar-los a Git)", "Al package.json"], c: 1 },
+        { q: "Què és dotenv?", a: ["Un framework frontend", "Una llibreria que carrega variables des del fitxer .env a process.env", "Un servei de hosting"], c: 1 },
+        { q: "Quina bona pràctica de seguretat s'aplica als inputs?", a: ["Acceptar qualsevol dada", "Validar i sanititzar tot input", "No usar formularis"], c: 1 },
+        { q: "Què fa el rate limiting?", a: ["Accelera les peticions", "Limita el nombre de peticions per IP (anti abús)", "Comprimeix les respostes"], c: 1 },
+        { q: "Quina plataforma és ideal per desplegar aplicacions React/Vue amb deploy automàtic des de Git?", a: ["Només GitHub Pages per apps amb backend", "Vercel o Netlify", "Només un VPS"], c: 1 },
+        { q: "Què ofereix Supabase?", a: ["Només hosting estàtic", "PostgreSQL gestionat, Auth, Storage (Backend-as-a-Service)", "Només CDN"], c: 1 },
+        { q: "Què significa la pila MERN?", a: ["MongoDB, Next.js, Redux, Node", "MySQL, Ember, Redis, Node", "MongoDB, Express, React, Node.js"], c: 2 },
+        { q: "En una pila Fullstack serverless amb Next.js, on corre el 'backend'?", a: ["Sempre en un servidor Express separat", "Només al client", "En funcions serverless (API Routes, Server Actions); sense servidor permanent"], c: 2 },
+        { q: "Quin flux de treball es recomana en desenvolupament Fullstack?", a: ["Codificar frontend i backend alhora sense disseny previ", "Dissenar API i models, backend primer, provar amb Postman; després frontend", "Només frontend i després adaptar el backend"], c: 1 },
+        { q: "Quin element HTML5 semàntic s'utilitza per la navegació principal?", a: ["<menu>", "<nav>", "<links>"], c: 1 },
+        { q: "Quina unitat CSS és relativa a la mida de la font del element arrel?", a: ["em", "rem", "px"], c: 1 },
+        { q: "Què fa el mètode response.json() en una crida fetch?", a: ["Envia dades JSON al servidor", "Converteix la resposta a string", "Parseja el cos de la resposta com a JSON i retorna una promesa"], c: 2 },
+        { q: "En Express, com s'obté el port des d'una variable d'entorn?", a: ["process.env.PORT", "env.PORT", "config.port"], c: 0 },
+        { q: "Quin codi d'estat HTTP indica 'recurso no trobat'?", a: ["400", "403", "404"], c: 2 },
+        { q: "En Next.js, com es rep el cos d'una petició POST en una API Route?", a: ["req.body", "await request.json()", "getBody(request)"], c: 1 },
+        { q: "Què és el HMR (Hot Module Replacement)?", a: ["Actualitzar mòduls al navegador sense recarregar tota la pàgina", "Un protocol de xarxa", "Un tipus de base de dades"], c: 0 },
+        { q: "Quin framework backend per Node.js és conegut per ser més ràpid que Express i amb tipus integrats?", a: ["Koa", "Fastify", "Hapi"], c: 1 },
+        { q: "En REST, per què es pot versionar l'API (p.ex. /api/v1/)?", a: ["Per estalviar espai", "Per mantenir compatibilitat quan es fan canvis", "Per obligació del protocol HTTP"], c: 1 },
+        { q: "Què és la autorització (authorization)?", a: ["Verificar la identitat de l'usuari (qui és)", "Verificar què pot fer l'usuari (permisos, roles)", "Enviar un email de verificació"], c: 1 },
+        { q: "Quina eina permet executar lint (o tests) abans de cada commit?", a: ["Només ESLint", "Husky + lint-staged", "npm run build"], c: 1 },
+        { q: "En producció, com s'han de configurar les variables d'entorn?", a: ["A la plataforma de deploy (Vercel, Railway, etc.), no al codi", "Directament al codi font", "Al fitxer .env dins del repositori"], c: 0 },
+        { q: "Quin servei és adequat per desplegar Node + PostgreSQL de forma senzilla?", a: ["Només Vercel", "Railway, Render o Fly.io", "Només GitHub Pages"], c: 1 },
+        { q: "Què són les Edge Functions?", a: ["Funcions que s'executen al servidor central", "Funcions que s'executen a la vora (edge) de la xarxa, properes a l'usuari", "Funcions que només s'executen al client"], c: 1 },
+        { q: "Quin element HTML5 semàntic s'utilitza per peus de pàgina?", a: ["<bottom>", "<footer>", "<end>"], c: 1 },
+        { q: "Què fa el destructuring en JavaScript?", a: ["Extreu propietats o elements d'objectes/arrays en variables", "Elimina objectes", "Comprimeix dades"], c: 0 },
+        { q: "Quin fitxer fixa les versions exactes de les dependències instal·lades (per reproducció)?", a: ["npm.config", "package.json", "package-lock.json (o yarn.lock)"], c: 2 },
+        { q: "Quin codi d'estat HTTP indica un error intern del servidor?", a: ["400", "500", "503"], c: 1 },
+        { q: "Què és l'ISR (Incremental Static Regeneration) en Next.js?", a: ["Pàgines estàtiques que es poden regenerar en segon pla després d'un temps o esdeveniment", "Un tipus d'API", "Renderitzat només al client"], c: 0 },
+        { q: "Quin element HTML5 semàntic s'utilitza per a contingut autònom (article, notícia)?", a: ["<section>", "<article>", "<div>"], c: 1 },
+        { q: "Què són les template literals en JavaScript (ES6+)?", a: ["Plantilles HTML", "Strings amb backticks que permeten interpolació ${variable}", "Components React"], c: 1 },
+        { q: "Quin script de npm s'utilitza habitualment per executar el servidor en desenvolupament?", a: ["npm start", "npm run dev (o similar, definit a package.json)", "npm server"], c: 1 },
+        { q: "Què és el Context API de React?", a: ["Un sistema per gestionar rutes", "Un mecanisme per compartir dades entre components sense passar props manualment", "Una eina de testing"], c: 1 },
+        { q: "En una Server Action de Next.js, com es reben les dades d'un formulari?", a: ["Des de req.body", "Com a objecte JSON a la funció", "FormData passat com a paràmetre (formData.get('nom'))"], c: 2 },
+        { q: "Què és Helmet.js en Express?", a: ["Un ORM", "Middleware que afegeix headers de seguretat HTTP", "Un client de base de dades"], c: 1 },
+        { q: "Quina relació entre taules es representa amb una taula intermitja (N:M)?", a: ["Un a un", "Molts a molts", "Un a molts"], c: 1 },
+        { q: "Què és Vitest?", a: ["Un bundler", "Un framework de testing ràpid, compatible amb Vite", "Un linter"], c: 1 },
+        { q: "Quin codi d'estat HTTP indica 'petició incorrecta' (bad request)?", a: ["401", "400", "404"], c: 1 },
+        { q: "Què ofereix la pila PERN respecte a MERN?", a: ["Usa PostgreSQL en lloc de MongoDB", "Usa PHP en lloc de Node", "Usa Prisma en lloc d'Express"], c: 0 },
+        { q: "Per què s'ha d'usar HTTPS en producció?", a: ["Només per millorar el SEO", "Per xifrar les comunicacions i protegir dades sensibles", "És obligatori per l'API de Node"], c: 1 },
+        { q: "Com s'ha de configurar el camp 'Secret' d'un JWT?", a: ["Ha de ser una cadena pública", "Ha de ser una clau complexa guardada en variables d'entorn", "No és necessari si usem HTTPS"], c: 1 }
+    ];
+
+    let currentIdx = 0;
+    let userAnswers = new Array(questions.length).fill(null);
+
+    function loadQuestion() {
+        const q = questions[currentIdx];
+        document.getElementById('q-num').innerText = `Pregunta ${currentIdx + 1} de ${questions.length}`;
+        document.getElementById('q-text').innerText = q.q;
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        
+        q.a.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = `option-btn ${userAnswers[currentIdx] === i ? 'selected' : ''}`;
+            btn.innerText = opt;
+            btn.onclick = () => selectOption(i);
+            container.appendChild(btn);
+        });
+
+        // Update progress
+        const progress = ((currentIdx + 1) / questions.length) * 100;
+        document.getElementById('progress-fill').style.width = `${progress}%`;
+        document.getElementById('progress-text').innerText = `Pregunta ${currentIdx + 1} de ${questions.length}`;
+        document.getElementById('percent-text').innerText = `${Math.round(progress)}%`;
+
+        // Update Nav buttons
+        document.getElementById('prev-btn').style.visibility = currentIdx === 0 ? 'hidden' : 'visible';
+        document.getElementById('next-btn').innerText = currentIdx === questions.length - 1 ? 'Finalitzar' : 'Següent';
+        document.getElementById('next-btn').disabled = userAnswers[currentIdx] === null;
+    }
+
+    function selectOption(index) {
+        userAnswers[currentIdx] = index;
+        const btns = document.querySelectorAll('.option-btn');
+        btns.forEach((b, i) => b.className = `option-btn ${i === index ? 'selected' : ''}`);
+        document.getElementById('next-btn').disabled = false;
+    }
+
+    function nextQuestion() {
+        if (currentIdx < questions.length - 1) {
+            currentIdx++;
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentIdx > 0) {
+            currentIdx--;
+            loadQuestion();
+        }
+    }
+
+    function showResults() {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        
+        let score = 0;
+        let errorsHTML = '';
+        
+        questions.forEach((q, i) => {
+            if (userAnswers[i] === q.c) {
+                score++;
+            } else {
+                errorsHTML += `
+                    <div class="error-card">
+                        <strong>${i+1}. ${q.q}</strong><br>
+                        <span style="color:var(--error)">La teva resposta: ${q.a[userAnswers[i]] || 'Cap'}</span><br>
+                        <span style="color:var(--success)">Correcta: ${q.a[q.c]}</span>
+                    </div>
+                `;
+            }
+        });
+
+        document.getElementById('score-val').innerText = `${score}/100`;
+        document.getElementById('result-msg').innerHTML = score > 70 ? "Molt bé! Estàs preparat/ada." : "Cal repassar una mica més.";
+        document.getElementById('error-log').innerHTML = errorsHTML || "<p>Felicitats! Cap error.</p>";
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
